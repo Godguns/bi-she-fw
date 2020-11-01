@@ -16,7 +16,7 @@ var userSchema=new Schema({
 	},
 	avater:{
 		type:String,
-		required:true
+		required:false
 	},
 	fork:{
 		type:[],

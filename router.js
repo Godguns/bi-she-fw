@@ -18,6 +18,7 @@ router.get('/api/v1/auth/login',(req,res)=>{
 		username:body.username,
 		password:body.password
 	},(err,user)=>{
+		console.log(body)
 		if(err){
 			res.send("err!")
 		}
