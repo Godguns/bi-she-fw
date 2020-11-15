@@ -7,6 +7,7 @@ var router= express.Router();
 const qiniu = require("qiniu");
 const e = require('express');
 var Talklist=require('./models/talklist')
+var note=require('./models/note');
 var jwt=require('jsonwebtoken')
 var tj=require('./models/TuiJian')
 var banner=require('./models/Banner');
@@ -34,6 +35,7 @@ router.get('/api/v1/auth/login',(req,res)=>{
 		"data":{
 			username:body.username,
 			password:body.password,
+			_id:user._id,
 			avater:user.avater,
 			history:user.history,
 			collect:user.collect,
@@ -165,8 +167,8 @@ router.get('/auth',(req,res)=>{
 router.get('/api/v1/auth',(req,res)=>{
 	var body=req.query;
 	User.findOne({
-		username:body.username,
-		password:body.password,
+		username:body.username
+		
 	},(err,user)=>{
 		//console.log(user)
 		if(err){
@@ -219,7 +221,7 @@ router.get('/api/v1/auth/change_info',  (req,res)=>{
 		var body=req.query;
 		User.findOne({
 				username:body.username,
-				password:body.password,
+				
 		},async (err,data)=>{
 			if(err){
 			res.send("err!")
@@ -229,7 +231,7 @@ router.get('/api/v1/auth/change_info',  (req,res)=>{
 		}else{
 			console.log(data)
 		var ret=	await User.updateOne({
-				 username: body.username, password:body.password}, { avater: body.avater }
+				 username: body.username}, { avater: body.avater }
 				 );
 				 await News.updateMany({
 					username: body.username}, { avater: body.avater }
@@ -240,11 +242,19 @@ router.get('/api/v1/auth/change_info',  (req,res)=>{
 						await tj.updateMany({
 							username: body.username}, { avater: body.avater }
 							);
+							await Talklist.updateMany({username:body.username},{avater:body.avater});
 
 		console.log("修改结果为",ret)
-		res.json({
-			"data":ret
+		await User.findOne({username: body.username},(err,ret)=>{
+			if(err){
+
+			}else{
+				res.json({
+					"data":ret
+				})
+			}
 		})
+		
 
 
 		}
@@ -266,6 +276,58 @@ router.get('/api/v1/spit',(req,res)=>{
 				})
 			}
 			})	
+})
+//根据id删除吐槽
+router.get('/deltc',(req,res)=>{
+	var body=req.query;
+	News.remove({_id:body._id},(err,ret)=>{
+		if(err){
+			console.log(err)
+		}else{
+			res.json({
+				"data":ret
+			})
+		}
+	})
+})
+//获取开发者日志
+router.get('/getnote',(req,res)=>{
+	note.find(function(err,ret){
+		if(err){
+			console.log('error!')
+		}else{
+			console.log('获取开发者日志成功')
+			res.json({
+				"data":ret
+			})
+		}
+	})
+})
+//添加开发者日志
+router.get('/addnote',(req,res)=>{
+	var body=req.query;
+	var note_one=new note({
+		imgsrc:body.imgsrc,
+		username:body.username,
+		avater:body.avater,
+		content:body.content,
+		time:body.time,
+		
+	})
+	note_one.save({
+		
+	},(err,ret)=>{
+		if (err) {
+			console.log(err)
+			res.json({
+				"data":err
+			})
+		}else{
+			res.json({
+				"data":ret
+			})
+		}
+	})
 })
 //获取个人动态
 router.get('/api/peason',(req,res)=>{
@@ -551,7 +613,20 @@ router.get('/usermsg',(req,res)=>{
 
 	})
 })
+//根据_id获取图片具体信息
+router.get('/getmsgbyid',(req,res)=>{
+	var body=req.query;
+	Pixiv.findOne({_id:body._id},(err,ret)=>{
+		if(err){
+			console.log("error!")
+		}else{
+			res.json({
+				"data":ret
+			})
+		}
+	})
 
+})
 //获取评论参数是_id
 router.get('/get_talklist',(req,res)=>{
 	var body=req.query;
@@ -762,6 +837,19 @@ router.get('/get_TJ',(req,res)=>{
 			res.json({
 				"data":err
 			})
+		}else{
+			res.json({
+				"data":ret
+			})
+		}
+	})
+})
+//删除推荐根据id
+router.get('/del_tj',(req,res)=>{
+	var body=req.query;
+	tj.deleteOne({_id:body._id},(err,ret)=>{
+		if(err){
+			console.log("删除推荐出错")
 		}else{
 			res.json({
 				"data":ret
